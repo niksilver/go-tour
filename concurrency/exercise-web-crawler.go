@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+    "sync"
 )
 
 type Fetcher interface {
@@ -15,7 +16,14 @@ type OneResult struct {
     err error
 }
 
-var Results map[string]OneResult = make(map[string]OneResult)
+type Results struct {
+    r map[string]OneResult
+    mux sync.Mutex
+}
+
+var results = Results{
+    r: make(map[string]OneResult),
+}
 
 // Crawl uses fetcher to recursively crawl
 // pages starting with url, to a maximum of depth.
@@ -26,7 +34,7 @@ func Crawl(url string, depth int, fetcher Fetcher) {
 	if depth <= 0 {
 		return
 	}
-    if _, ok := Results[url]; ok {
+    if _, ok := results.r[url]; ok {
         return
     }
     body, urls, err := fetcher.Fetch(url)
@@ -40,15 +48,15 @@ func Crawl(url string, depth int, fetcher Fetcher) {
 
 func recordResult(url string, body string, err error) {
     if err != nil {
-        Results[url] = OneResult{err: err}
+        results.r[url] = OneResult{err: err}
     } else {
-        Results[url] = OneResult{body: body}
+        results.r[url] = OneResult{body: body}
     }
  }
 
 func main() {
 	Crawl("https://golang.org/", 4, fetcher)
-    for url, result := range Results {
+    for url, result := range results.r {
         fmt.Printf("%v: ", url)
         if result.err == nil {
             fmt.Printf("Body %v\n", result.body)
