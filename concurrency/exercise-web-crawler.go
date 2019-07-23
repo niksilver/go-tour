@@ -26,17 +26,25 @@ func Crawl(url string, depth int, fetcher Fetcher) {
 	if depth <= 0 {
 		return
 	}
-    body, urls, err := fetcher.Fetch(url)
-    if err != nil {
-        Results[url] = OneResult{err: err}
+    if _, ok := Results[url]; ok {
         return
     }
-    Results[url] = OneResult{body: body}
-    for _, u := range urls {
-        Crawl(u, depth-1, fetcher)
+    body, urls, err := fetcher.Fetch(url)
+    recordResult(url, body, err)
+    if err == nil {
+        for _, u := range urls {
+            Crawl(u, depth-1, fetcher)
+        }
     }
-    return
 }
+
+func recordResult(url string, body string, err error) {
+    if err != nil {
+        Results[url] = OneResult{err: err}
+    } else {
+        Results[url] = OneResult{body: body}
+    }
+ }
 
 func main() {
 	Crawl("https://golang.org/", 4, fetcher)
