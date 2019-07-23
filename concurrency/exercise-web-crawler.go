@@ -47,11 +47,13 @@ func Crawl(url string, depth int, fetcher Fetcher) {
 }
 
 func recordResult(url string, body string, err error) {
+    results.mux.Lock()
     if err != nil {
         results.r[url] = OneResult{err: err}
     } else {
         results.r[url] = OneResult{body: body}
     }
+    results.mux.Unlock()
  }
 
 func main() {
