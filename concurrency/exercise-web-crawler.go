@@ -37,16 +37,20 @@ func Crawl(url string, depth int, fetcher Fetcher) {
     body, urls, err := fetcher.Fetch(url)
     recordResult(url, body, err)
     if err == nil {
-        done := make(chan string, len(urls))
-        for _, u := range urls {
-            go func(u string) {
-                Crawl(u, depth-1, fetcher)
-                done <- u
-            }(u)
-        }
-        for i := 0; i < len(urls); i++ {
-            <-done
-        }
+        parallelCrawl(urls, depth-1, fetcher)
+    }
+}
+
+func parallelCrawl(urls []string, depth int, fetcher Fetcher) {
+    done := make(chan string, len(urls))
+    for _, u := range urls {
+        go func(u string) {
+            Crawl(u, depth, fetcher)
+            done <- u
+        }(u)
+    }
+    for i := 0; i < len(urls); i++ {
+        <-done
     }
 }
 
