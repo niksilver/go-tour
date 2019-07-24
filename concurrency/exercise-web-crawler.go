@@ -28,44 +28,25 @@ var results = Results{
 // Crawl uses fetcher to recursively crawl
 // pages starting with url, to a maximum of depth.
 func Crawl(url string, depth int, fetcher Fetcher) {
-	// TODO: Fetch URLs in parallel.
-	// TODO: Don't fetch the same URL twice.
-	// This implementation doesn't do either:
-    prefix := fmt.Sprintf("%v, %v:", depth, url)
-    fmt.Printf("%v Entering...\n", prefix)
 	if depth <= 0 {
-        fmt.Printf("%v Returning early (zero depth)\n", prefix)
 		return
 	}
     if _, ok := results.r[url]; ok {
-        fmt.Printf("%v Returning early (fetched previously)\n", prefix)
         return
     }
-    fmt.Printf("%v Fetching\n", prefix)
     body, urls, err := fetcher.Fetch(url)
-    fmt.Printf("%v Fetched\n", prefix)
     recordResult(url, body, err)
     if err == nil {
-        fmt.Printf("%v Got URLs to crawl\n", prefix)
         done := make(chan string, len(urls))
-        for i, u := range urls {
-            fmt.Printf("%v %v: About to go crawl for %v\n", prefix, i, u)
+        for _, u := range urls {
             go func(u string) {
-                fmt.Printf("%v In go routine, about to crawl for %v-%v\n", prefix, i, u)
                 Crawl(u, depth-1, fetcher)
-                fmt.Printf("%v In go routine, done crawl for %v-%v\n", prefix, i, u)
                 done <- u
             }(u)
-            fmt.Printf("%v Set off go routine for %v-%v\n", prefix, i, u)
         }
         for i := 0; i < len(urls); i++ {
-            fmt.Printf("%v Waiting for done %v/%v\n", prefix, i+1, len(urls))
-            u := <-done
-            fmt.Printf("%v Received done %v/%v: %v\n", prefix, i+1, len(urls), u)
+            <-done
         }
-        fmt.Printf("%v Returning after crawls\n", prefix)
-    } else {
-        fmt.Printf("%v Got error, returning without crawls\n", prefix)
     }
 }
 
